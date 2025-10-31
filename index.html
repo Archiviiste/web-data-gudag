@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Data Gudang - CRUD</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2rem;
+      background-color: #f9f9f9;
+    }
+    h2 {
+      color: #333;
+    }
+    form {
+      margin-bottom: 1.5rem;
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 0 8px #ddd;
+      max-width: 600px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input, select {
+      padding: 6px;
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 4px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    button {
+      margin-top: 1rem;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      background-color: #4CAF50;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 0 10px #ccc;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background-color: #4CAF50;
+      color: white;
+    }
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+    .action-btn {
+      margin-right: 5px;
+      padding: 6px 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      color: white;
+      font-weight: bold;
+    }
+    .edit-btn {
+      background-color: #2196F3;
+    }
+    .delete-btn {
+      background-color: #f44336;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Data Gudang - CRUD</h2>
+
+  <form id="form-barang">
+    <input type="hidden" id="id" />
+    <label>Nama Barang</label>
+    <input type="text" id="nama" required />
+
+    <label>Stok</label>
+    <input type="number" id="stok" min="0" required />
+
+    <label>Lokasi</label>
+    <input type="text" id="lokasi" required />
+
+    <label>Barang Masuk</label>
+    <input type="number" id="barang_masuk" min="0" required />
+
+    <label>Barang Keluar</label>
+    <input type="number" id="barang_keluar" min="0" required />
+
+    <label>Harga Jual (angka)</label>
+    <input type="number" id="harga_jual" min="0" required />
+
+    <label>Harga Beli (angka)</label>
+    <input type="number" id="harga_beli" min="0" required />
+
+    <button type="submit">Simpan</button>
+    <button type="button" id="batal" style="background:#999; margin-left:10px; display:none;">Batal</button>
+  </form>
+
+  <h3>Daftar Barang</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th><th>Nama</th><th>Stok</th><th>Lokasi</th><th>Barang Masuk</th><th>Barang Keluar</th><th>Harga Jual</th><th>Harga Beli</th><th>Keuntungan</th><th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody id="table-body"></tbody>
+  </table>
+
+<script>
+  const form = document.getElementById("form-barang");
+  const tableBody = document.getElementById("table-body");
+  const batalBtn = document.getElementById("batal");
+
+  function formatRupiah(angka) {
+    return "Rp " + Number(angka).toLocaleString("id-ID", { minimumFractionDigits: 2 });
+  }
+
+  function fetchBarang() {
+    fetch("/api/barang")
+      .then(res => res.json())
+      .then(data => {
+        tableBody.innerHTML = "";
+        data.forEach(b => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${b.id}</td>
+            <td>${b.nama}</td>
+            <td>${b.stok}</td>
+            <td>${b.lokasi}</td>
+            <td>${b.barang_masuk}</td>
+            <td>${b.barang_keluar}</td>
+            <td>${formatRupiah(b.harga_jual)}</td>
+            <td>${formatRupiah(b.harga_beli)}</td>
+            <td>${formatRupiah(b.keuntungan)}</td>
+            <td>
+              <button class="action-btn edit-btn" onclick='editBarang(${JSON.stringify(b)})'>Edit</button>
+              <button class="action-btn delete-btn" onclick='deleteBarang(${b.id})'>Hapus</button>
+            </td>
+          `;
+          tableBody.appendChild(row);
+        });
+      });
+  }
+
+  function editBarang(data) {
+    document.getElementById("id").value = data.id;
+    document.getElementById("nama").value = data.nama;
+    document.getElementById("stok").value = data.stok;
+    document.getElementById("lokasi").value = data.lokasi;
+    document.getElementById("barang_masuk").value = data.barang_masuk;
+    document.getElementById("barang_keluar").value = data.barang_keluar;
+    document.getElementById("harga_jual").value = data.harga_jual;
+    document.getElementById("harga_beli").value = data.harga_beli;
+    batalBtn.style.display = "inline-block";
+  }
+
+  batalBtn.onclick = () => {
+    form.reset();
+    document.getElementById("id").value = "";
+    batalBtn.style.display = "none";
+  }
+
+  form.onsubmit = e => {
+    e.preventDefault();
+
+    const id = document.getElementById("id").value;
+    const data = {
+      nama: document.getElementById("nama").value,
+      stok: Number(document.getElementById("stok").value),
+      lokasi: document.getElementById("lokasi").value,
+      barang_masuk: Number(document.getElementById("barang_masuk").value),
+      barang_keluar: Number(document.getElementById("barang_keluar").value),
+      harga_jual: Number(document.getElementById("harga_jual").value),
+      harga_beli: Number(document.getElementById("harga_beli").value)
+    };
+
+    if (id) {
+      fetch(`/api/barang/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      })
+      .then(res => res.json())
+      .then(() => {
+        form.reset();
+        document.getElementById("id").value = "";
+        batalBtn.style.display = "none";
+        fetchBarang();
+      });
+    } else {
+      fetch("/api/barang", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      })
+      .then(res => res.json())
+      .then(() => {
+        form.reset();
+        fetchBarang();
+      });
+    }
+  }
+
+  function deleteBarang(id) {
+    if (confirm("Yakin ingin menghapus barang ini?")) {
+      fetch(`/api/barang/${id}`, { method: "DELETE" })
+        .then(res => res.json())
+        .then(() => fetchBarang());
+    }
+  }
+
+  fetchBarang();
+</script>
+
+</body>
+</html>
